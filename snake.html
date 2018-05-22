@@ -1,0 +1,203 @@
+<canvas id="screen" width="800" height="600"></canvas>
+<style>
+    body {
+        background: #ccc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #screen {
+        background: white;
+    }
+</style>
+<script>
+  (function () {
+
+    function randInt(lo, up) {
+      return Math.floor(Math.random() * (up - lo)) + lo
+    }
+
+    function Point(x, y) {
+      this.x = x
+      this.y = y
+    }
+
+    Point.rand = function (height, width) {
+      return new Point(randInt(0, width), randInt(0, height))
+    }
+
+    Point.prototype.move = function (dir) {
+      // top, right, bottom, left
+      var dx = [0, 1, 0, -1]
+      var dy = [-1, 0, 1, 0]
+      return new Point(this.x + dx[dir], this.y + dy[dir])
+    }
+
+    Point.prototype.equal = function (p) {
+      return p.x === this.x && p.y === this.y
+    }
+
+    function Game(height, width) {
+      this.height = height
+      this.width = width
+      this.reset()
+    }
+
+    function Painter(canvas) {
+      var s = this.edgeSize = 20
+      this.canvas = canvas
+      this.context = canvas.getContext('2d')
+      this.maxHeight = Math.floor(canvas.height / s)
+      this.maxWidth = Math.floor(canvas.width / s)
+    }
+
+    Painter.prototype.point = function (p, color) {
+      var s = this.edgeSize
+      var c = this.context
+      c.fillStyle = color || 'black'
+      c.fillRect(p.x * s, p.y * s, s, s)
+    }
+
+    Painter.prototype.clear = function () {
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    }
+
+    Game.prototype.reset = function () {
+      this.state = 'start'
+      this.direction = 0
+      this.snake = [this._randPoint()]
+      this.box = this._randPoint()
+    }
+
+    Game.prototype._randPoint = function () {
+      return Point.rand(this.height, this.width)
+    }
+
+    Game.prototype._isBounded = function (point) {
+      return 0 <= point.x && point.x < this.width && 0 <= point.y && point.y < this.height
+    }
+
+    Game.prototype._isInSnake = function (point) {
+      return this.snake.some(function (p) {
+        return p.equal(point)
+      })
+    }
+
+    Game.prototype.progress = function () {
+      this.state = 'running'
+      var head = this.snake[this.snake.length - 1]
+      var next = head.move(this.direction)
+
+      if (!this._isBounded(next)) {
+        this.state = 'end'
+        return
+      }
+
+      this.snake.push(next)
+
+      // prepend snake if encounter box
+      if (next.equal(this.box)) {
+        // random box that is not on snake
+        while (this._isInSnake(this.box)) {
+          this.box = this._randPoint()
+        }
+      } else {
+        // remove tail
+        this.snake.shift()
+      }
+    }
+
+    Game.prototype.setDirection = function (dir) {
+      var len = this.snake.length
+      // cannot move back to snake direction
+      if (len >= 2) {
+        var e0 = this.snake[len - 1]
+        var e1 = this.snake[len - 2]
+        if (e0.move(dir).equal(e1)) return
+      }
+      this.direction = dir
+    }
+
+    Game.prototype.paint = function (painter) {
+      painter.clear()
+      painter.point(this.box, 'red')
+      this.snake.forEach(function (p) {
+        painter.point(p)
+      })
+    }
+
+    Game.prototype.isEnded = function () {
+      return this.state === 'end'
+    }
+
+    function Runner(screen) {
+      this.interval = 100
+      var painter = this.painter = new Painter(screen)
+      var game = this.game = new Game(painter.maxHeight, painter.maxWidth)
+
+      game.paint(painter)
+      document.addEventListener('keydown', function (event) {
+        switch (event.key) {
+          case 'ArrowUp':
+            game.setDirection(0)
+            break
+          case 'ArrowRight':
+            game.setDirection(1)
+            break
+          case 'ArrowDown':
+            game.setDirection(2)
+            break
+          case 'ArrowLeft':
+            game.setDirection(3)
+            break
+        }
+      })
+      this.timer = null
+    }
+
+    Runner.prototype.start = function () {
+      if (this.timer) return
+      var self = this
+      this.timer = setInterval(function () {
+        self.game.progress()
+        if (self.game.isEnded()) {
+          alert('GAME OVER')
+          self.stop()
+        }
+        else self.game.paint(self.painter)
+      }, this.interval)
+    }
+
+    Runner.prototype.stop = function () {
+      if (this.timer) clearInterval(this.timer)
+      this.timer = null
+    }
+
+    Runner.prototype.reset = function () {
+      this.stop()
+      this.game.reset()
+    }
+
+    Runner.prototype.restart = function () {
+      this.reset()
+      this.start()
+    }
+
+    // banner
+    console.log('\n' +
+      ' _______  _        _______  _        _______ \n' +
+      '(  ____ \\( (    /|(  ___  )| \\    /\\(  ____ \\\n' +
+      '| (    \\/|  \\  ( || (   ) ||  \\  / /| (    \\/\n' +
+      '| (_____ |   \\ | || (___) ||  (_/ / | (__    \n' +
+      '(_____  )| (\\ \\) ||  ___  ||   _ (  |  __)   \n' +
+      '      ) || | \\   || (   ) ||  ( \\ \\ | (      \n' +
+      '/\\____) || )  \\  || )   ( ||  /  \\ \\| (____/\\\n' +
+      '\\_______)|/    )_)|/     \\||_/    \\/(_______/\n' +
+      '                                             \n')
+    var screen = document.getElementById('screen')
+    var runner = new Runner(screen)
+    runner.start()
+
+  })()
+</script>
