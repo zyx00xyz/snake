@@ -89,7 +89,7 @@
       var head = this.snake[this.snake.length - 1]
       var next = head.move(this.direction)
 
-      if (!this._isBounded(next)) {
+      if (!this._isBounded(next) || _isInSnake(next)) {
         this.state = 'end'
         return
       }
