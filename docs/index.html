@@ -6,7 +6,7 @@
 <div>
     <p>
         <strong>Instruction:</strong>
-        Press ← ↑ → ↓ to start/play game. Press SPACE to pause. Refresh to start a new game.
+        Press ← ↑ → ↓ to start/resume game. Press SPACE to pause. Refresh to start a new game.
     </p>
     <canvas width="800" height="600"></canvas>
 </div>
@@ -31,10 +31,16 @@
 <script>
   (function () {
 
+    // helper
     function randInt(lo, up) {
       return Math.floor(Math.random() * (up - lo)) + lo
     }
 
+    /**
+     * @constructor
+     * @param {number} x
+     * @param {number} y
+     */
     function Point(x, y) {
       this.x = x
       this.y = y
@@ -96,8 +102,12 @@
       this.reset()
     }
 
+    Game.STATE_START = 'start'
+    Game.STATE_RUNNING = ' running'
+    Game.STATE_END = 'end'
+
     Game.prototype.reset = function () {
-      this.state = 'start'
+      this.state = this.constructor.STATE_START
       this.direction = 0
       this.snake = [this._randPoint()]
       this.box = this._randPoint()
@@ -118,20 +128,22 @@
     }
 
     Game.prototype.progress = function () {
-      this.state = 'running'
+      this.state = this.constructor.STATE_RUNNING
       var head = this.snake[this.snake.length - 1]
       var next = head.move(this.direction)
 
+      // end game condition
       if (!this._isBounded(next) || this._isInSnake(next)) {
-        this.state = 'end'
+        this.state = this.constructor.STATE_END
         return
       }
 
+      // prepend snake
       this.snake.push(next)
 
-      // prepend snake if encounter box
+      // reach box
       if (next.equal(this.box)) {
-        // random box that is not on snake
+        // assign a random box that is not on snake
         while (this._isInSnake(this.box)) {
           this.box = this._randPoint()
         }
@@ -179,20 +191,18 @@
 
       game.paint(painter)
       document.addEventListener('keydown', function (event) {
-        // press any key to start
-
         switch (event.key) {
           case 'ArrowUp':
-            self.setDirection(0)
+            self.setDirectionAndStart(0)
             break
           case 'ArrowRight':
-            self.setDirection(1)
+            self.setDirectionAndStart(1)
             break
           case 'ArrowDown':
-            self.setDirection(2)
+            self.setDirectionAndStart(2)
             break
           case 'ArrowLeft':
-            self.setDirection(3)
+            self.setDirectionAndStart(3)
             break
           case ' ':
             self.stop()
@@ -201,7 +211,7 @@
       })
     }
 
-    Runner.prototype.setDirection = function (dir) {
+    Runner.prototype.setDirectionAndStart = function (dir) {
       this.game.setDirection(dir)
       if (!this.game.isEnded()) this.start()
     }
