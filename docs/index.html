@@ -1,10 +1,27 @@
-<canvas width="800" height="600"></canvas>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<div>
+    <p>
+        <strong>Instruction:</strong>
+        Press ← ↑ → ↓ to start/play game. Press SPACE to pause. Refresh to start a new game.
+    </p>
+    <canvas width="800" height="600"></canvas>
+</div>
+</body>
 <style>
     body {
         background: #f2f2f2;
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+
+    p {
+        background: palegoldenrod;
+        padding: 10px 20px;
     }
 
     canvas {
@@ -163,27 +180,30 @@
       game.paint(painter)
       document.addEventListener('keydown', function (event) {
         // press any key to start
-        if (!game.isEnded()) {
-          self.start()
-        }
+
         switch (event.key) {
           case 'ArrowUp':
-            game.setDirection(0)
+            self.setDirection(0)
             break
           case 'ArrowRight':
-            game.setDirection(1)
+            self.setDirection(1)
             break
           case 'ArrowDown':
-            game.setDirection(2)
+            self.setDirection(2)
             break
           case 'ArrowLeft':
-            game.setDirection(3)
+            self.setDirection(3)
             break
           case ' ':
             self.stop()
             break
         }
       })
+    }
+
+    Runner.prototype.setDirection = function (dir) {
+      this.game.setDirection(dir)
+      if (!this.game.isEnded()) this.start()
     }
 
     Runner.prototype.start = function () {
@@ -229,3 +249,4 @@
     new Runner(canvas)
   })()
 </script>
+</html>
