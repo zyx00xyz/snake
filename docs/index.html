@@ -1,14 +1,14 @@
-<canvas id="screen" width="800" height="600"></canvas>
+<canvas width="800" height="600"></canvas>
 <style>
     body {
-        background: #ccc;
+        background: #f2f2f2;
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
-    #screen {
-        background: white;
+    canvas {
+        background: #222;
     }
 </style>
 <script>
@@ -38,12 +38,11 @@
       return p.x === this.x && p.y === this.y
     }
 
-    function Game(height, width) {
-      this.height = height
-      this.width = width
-      this.reset()
-    }
-
+    /**
+     * Abstract the drawing
+     * @constructor
+     * @param canvas
+     */
     function Painter(canvas) {
       var s = this.edgeSize = 20
       this.canvas = canvas
@@ -55,12 +54,29 @@
     Painter.prototype.point = function (p, color) {
       var s = this.edgeSize
       var c = this.context
-      c.fillStyle = color || 'black'
-      c.fillRect(p.x * s, p.y * s, s, s)
+      c.beginPath()
+      c.fillStyle = color
+      c.rect(p.x * s, p.y * s, s, s)
+      c.fill()
+      c.strokeStyle = '#222'
+      c.stroke()
     }
 
     Painter.prototype.clear = function () {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    }
+
+    /**
+     * Class that hold the game state
+     *
+     * @constructor
+     * @param {number} height
+     * @param {number} width
+     */
+    function Game(height, width) {
+      this.height = height
+      this.width = width
+      this.reset()
     }
 
     Game.prototype.reset = function () {
@@ -89,7 +105,7 @@
       var head = this.snake[this.snake.length - 1]
       var next = head.move(this.direction)
 
-      if (!this._isBounded(next) || _isInSnake(next)) {
+      if (!this._isBounded(next) || this._isInSnake(next)) {
         this.state = 'end'
         return
       }
@@ -123,7 +139,7 @@
       painter.clear()
       painter.point(this.box, 'red')
       this.snake.forEach(function (p) {
-        painter.point(p)
+        painter.point(p, '#00ff00')
       })
     }
 
@@ -131,13 +147,25 @@
       return this.state === 'end'
     }
 
-    function Runner(screen) {
+    /**
+     * All IO handled in Runner
+     *
+     * @param canvas
+     * @constructor
+     */
+    function Runner(canvas) {
+      var self = this
       this.interval = 100
-      var painter = this.painter = new Painter(screen)
+      this.timer = null
+      var painter = this.painter = new Painter(canvas)
       var game = this.game = new Game(painter.maxHeight, painter.maxWidth)
 
       game.paint(painter)
       document.addEventListener('keydown', function (event) {
+        // press any key to start
+        if (!game.isEnded()) {
+          self.start()
+        }
         switch (event.key) {
           case 'ArrowUp':
             game.setDirection(0)
@@ -151,9 +179,11 @@
           case 'ArrowLeft':
             game.setDirection(3)
             break
+          case ' ':
+            self.stop()
+            break
         }
       })
-      this.timer = null
     }
 
     Runner.prototype.start = function () {
@@ -195,9 +225,7 @@
       '/\\____) || )  \\  || )   ( ||  /  \\ \\| (____/\\\n' +
       '\\_______)|/    )_)|/     \\||_/    \\/(_______/\n' +
       '                                             \n')
-    var screen = document.getElementById('screen')
-    var runner = new Runner(screen)
-    runner.start()
-
+    var canvas = document.querySelector('canvas')
+    new Runner(canvas)
   })()
 </script>
